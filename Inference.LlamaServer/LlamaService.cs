@@ -11,7 +11,7 @@ public static class LlamaService
     {
         var parameters = new ModelParams(Path.Combine(AppContext.BaseDirectory, "Llama-3.2-3B-Instruct-Q4_0.gguf"))
         {
-            ContextSize = 8192
+            ContextSize = 32768
         };
         var model = LLamaWeights.LoadFromFile(parameters);
         return new StatelessExecutor(model, parameters) { ApplyTemplate = true }.AsChatClient();
