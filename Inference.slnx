@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Inference.Api/Inference.Api.csproj" />
+  <Project Path="Inference.Front/Inference.Front.csproj" />
+  <Project Path="Inference.LlamaServer/Inference.LlamaServer.csproj" />
+</Solution>

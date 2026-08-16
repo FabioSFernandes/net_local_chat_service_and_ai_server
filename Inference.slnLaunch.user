@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "Inference.Api\\Inference.Api.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Inference.Front\\Inference.Front.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

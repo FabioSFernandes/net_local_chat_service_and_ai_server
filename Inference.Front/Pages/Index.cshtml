@@ -1,0 +1,102 @@
+﻿@page
+@model IndexModel
+@{
+    Layout = "_ChatLayout";
+    ViewData["Title"] = "Chat";
+}
+
+<div class="chat-shell">
+    <header class="chat-header">Chat</header>
+
+    <div id="history" class="chat-history"></div>
+
+    <form id="prompt-form" class="chat-composer">
+        <div class="chat-composer-field">
+            <textarea id="prompt" class="form-control" rows="3" placeholder="Write a prompt..." required></textarea>
+            <button type="submit" id="send" class="btn btn-primary">Send</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+    const historyEl = document.getElementById("history");
+    const form = document.getElementById("prompt-form");
+    const promptEl = document.getElementById("prompt");
+    const sendBtn = document.getElementById("send");
+
+    function sseData(block) {
+        const lines = block.split("\n").filter((l) => l.startsWith("data:"));
+        if (!lines.length) return "";
+        const raw = lines.map((l) => l.slice(5).replace(/^ /, "")).join("\n");
+        try {
+            const parsed = JSON.parse(raw);
+            if (typeof parsed === "string") return parsed;
+            if (parsed && typeof parsed.data === "string") return parsed.data;
+        } catch { }
+        return raw;
+    }
+
+    function addTurn(prompt) {
+        const wrap = document.createElement("div");
+        wrap.className = "chat-turn";
+        wrap.innerHTML =
+            `<div class="chat-prompt"></div>` +
+            `<div class="chat-reply"></div>`;
+        wrap.querySelector(".chat-prompt").textContent = prompt;
+        historyEl.appendChild(wrap);
+        historyEl.scrollTop = historyEl.scrollHeight;
+        return wrap.querySelector(".chat-reply");
+    }
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const prompt = promptEl.value.trim();
+        if (!prompt) return;
+
+        promptEl.value = "";
+        sendBtn.disabled = true;
+        const replyEl = addTurn(prompt);
+
+        try {
+            const res = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt })
+            });
+            if (!res.ok || !res.body) {
+                replyEl.textContent = "Error " + res.status;
+                return;
+            }
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const parts = buffer.split("\n\n");
+                buffer = parts.pop() ?? "";
+                for (const part of parts) {
+                    replyEl.textContent += sseData(part);
+                    historyEl.scrollTop = historyEl.scrollHeight;
+                }
+            }
+            if (buffer) replyEl.textContent += sseData(buffer);
+        } catch (err) {
+            replyEl.textContent = String(err);
+        } finally {
+            sendBtn.disabled = false;
+            promptEl.focus();
+        }
+    });
+
+    promptEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            form.requestSubmit();
+        }
+    });
+</script>
+}

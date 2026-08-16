@@ -1,0 +1,11 @@
+@Inference.Api_HostAddress = http://localhost:5018
+
+POST {{Inference.Api_HostAddress}}/chat
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+  "prompt": "Hello"
+}
+
+###
